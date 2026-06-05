@@ -1,3 +1,8 @@
+// GameManager.cs
+// 역할: 게임 전체 흐름을 관리한다.
+//   - InputManager.OnShoot → ball.Launch() + 타수 증가 + 발사 위치 저장
+//   - 매 Update: 공 정지 감지(비거리 계산·UI 표시) + 표면 변화 감지(상황 텍스트)
+//   - OnBallInHole: 홀인 연출(카메라·애니메이션·결과 패널) 처리
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -5,101 +10,159 @@ public class GameManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private InputManager inputManager;
     [SerializeField] private BallPhysics ball;
-    // 추가 참조: 타수/UI 흐름을 관리합니다.
     [SerializeField] private ScoreManager scoreManager;
     [SerializeField] private UIManager uiManager;
+    [SerializeField] private CameraController cameraController;
+    // HoleCup Transform: 홀인 연출 및 비거리 기준입니다.
+    [SerializeField] private Transform holeTransform;
 
-    // 공 정지 감지를 위해 직전 프레임의 비행 상태를 저장합니다.
+    // IsFlying 폴링 — true→false 전환 시 공 정지 처리합니다.
     private bool wasFlying;
+
+    // 발사 시점 위치 — 정지 후 비거리 계산에 사용합니다.
+    private Vector3 shotStartPosition;
+
+    // 표면 변화 감지 — 바뀔 때마다 상황 텍스트를 표시합니다.
+    private SurfaceType previousSurface = SurfaceType.None;
+
+    // Ball에 부착된 홀인 애니메이션 컴포넌트입니다.
+    private BallAnimationController ballAnimController;
 
     private void Awake()
     {
         if (inputManager == null)
-        {
-            inputManager = FindFirstObjectByType<InputManager>();
-        }
+            inputManager = FindAnyObjectByType<InputManager>();
 
         if (ball == null)
-        {
-            ball = FindFirstObjectByType<BallPhysics>();
-        }
+            ball = FindAnyObjectByType<BallPhysics>();
 
         if (scoreManager == null)
-        {
-            scoreManager = FindFirstObjectByType<ScoreManager>();
-        }
+            scoreManager = FindAnyObjectByType<ScoreManager>();
 
         if (uiManager == null)
+            uiManager = FindAnyObjectByType<UIManager>();
+
+        if (cameraController == null)
+            cameraController = FindAnyObjectByType<CameraController>();
+
+        // BallAnimationController는 Ball에 부착되어 있어야 합니다.
+        // 없으면 자동으로 추가합니다.
+        if (ball != null)
         {
-            uiManager = FindFirstObjectByType<UIManager>();
+            ballAnimController = ball.GetComponent<BallAnimationController>();
+            if (ballAnimController == null)
+                ballAnimController = ball.gameObject.AddComponent<BallAnimationController>();
         }
     }
 
     private void OnEnable()
     {
         if (inputManager != null)
-        {
             inputManager.OnShoot += HandleShoot;
-        }
     }
 
     private void OnDisable()
     {
         if (inputManager != null)
-        {
             inputManager.OnShoot -= HandleShoot;
-        }
     }
 
     private void Update()
     {
-        // BallPhysics에는 정지 이벤트가 없으므로, IsFlying의 true→false 전환을 폴링해 정지를 감지합니다.
-        if (ball == null)
-        {
-            return;
-        }
+        if (ball == null) return;
 
         bool isFlying = ball.IsFlying;
+
+        // IsFlying true→false: 공 정지 처리합니다.
         if (wasFlying && !isFlying)
-        {
             HandleBallStopped();
-        }
 
         wasFlying = isFlying;
+
+        // 표면 변화 감지: 타격 후 공이 움직이는 동안만 확인합니다.
+        if (isFlying || ball.IsGrounded)
+            CheckSurfaceChange();
     }
 
     private void HandleShoot(float power, float pitch, Vector3 forward)
     {
-        if (ball == null)
-        {
-            return;
-        }
+        if (ball == null) return;
+
+        // 발사 위치를 기록합니다.
+        shotStartPosition = ball.transform.position;
 
         ball.Launch(power, pitch, forward);
 
-        // 한 번 칠 때마다 타수를 증가시킵니다.
         if (scoreManager != null)
-        {
             scoreManager.AddShot();
-        }
     }
 
     private void HandleBallStopped()
     {
-        // 공이 멈췄을 때의 처리 지점입니다. (다음 샷 준비 등 확장 가능)
+        if (uiManager == null || ball == null) return;
+
+        // 비거리를 미터 → 야드로 환산합니다 (1m ≈ 1.094yd).
+        float meters = Vector3.Distance(shotStartPosition, ball.transform.position);
+        int yards = Mathf.RoundToInt(meters * 1.094f);
+
+        // 첫 번째 샷은 "Drive", 이후는 "Shot"으로 표시합니다.
+        string label = (scoreManager != null && scoreManager.TotalShots == 1) ? "Drive" : "Shot";
+        uiManager.ShowHitResult($"{label}: {yards}Y");
     }
 
-    // HoleTrigger가 홀인을 통지하면 호출됩니다. 클리어 처리를 담당합니다.
+    private void CheckSurfaceChange()
+    {
+        SurfaceType current = ball.CurrentSurface;
+        if (current == previousSurface) return;
+
+        previousSurface = current;
+
+        if (uiManager == null) return;
+
+        switch (current)
+        {
+            case SurfaceType.Green:
+                uiManager.ShowSituationText("Green Edge");
+                break;
+            case SurfaceType.Bunker:
+                uiManager.ShowSituationText("Bunker!");
+                break;
+            case SurfaceType.Rough:
+                uiManager.ShowSituationText("Rough");
+                break;
+            case SurfaceType.OutOfBounds:
+                uiManager.ShowSituationText("Out of Bounds!");
+                break;
+        }
+    }
+
+    // HoleTrigger가 홀인을 감지했을 때 호출합니다.
     public void OnBallInHole()
     {
-        if (uiManager != null)
-        {
-            uiManager.ShowResultPanel(true);
-        }
+        // 1. 카메라를 HoleIn 상태로 전환합니다.
+        if (cameraController != null)
+            cameraController.SetHoleInCamera();
 
+        // 2. 공 물리를 멈춥니다.
         if (ball != null)
-        {
             ball.Stop();
+
+        // 3. 홀인 애니메이션을 재생하고, 완료 후 결과를 표시합니다.
+        if (ballAnimController != null)
+        {
+            // 매번 깨끗하게 교체해 중복 구독을 방지합니다.
+            ballAnimController.OnAnimationComplete = () =>
+            {
+                if (uiManager != null && scoreManager != null)
+                    uiManager.ShowHoleInResult(scoreManager.TotalShots);
+            };
+            ballAnimController.PlayHoleInAnimation();
+        }
+        else
+        {
+            // 애니메이션 컴포넌트가 없으면 즉시 결과를 표시합니다.
+            if (uiManager != null && scoreManager != null)
+                uiManager.ShowHoleInResult(scoreManager.TotalShots);
         }
     }
 }

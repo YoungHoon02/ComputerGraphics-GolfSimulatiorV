@@ -10,6 +10,7 @@ public class InputManager : MonoBehaviour
     [SerializeField] private float currentPower;
     [SerializeField] private float chargeSpeed = 1.2f;
     [SerializeField] private bool isCharging;
+    private bool chargingUp = true;
 
     [Header("Pitch")]
     [SerializeField] private float currentPitch = 25f;
@@ -51,11 +52,29 @@ public class InputManager : MonoBehaviour
         {
             currentPower = 0f;
             isCharging = true;
+            chargingUp = true;
         }
 
         if (Input.GetKey(KeyCode.Space) && isCharging)
         {
-            currentPower = Mathf.Clamp01(currentPower + chargeSpeed * Time.deltaTime);
+            if (chargingUp)
+            {
+                currentPower += chargeSpeed * Time.deltaTime;
+                if (currentPower >= 1f)
+                {
+                    currentPower = 1f;
+                    chargingUp = false;
+                }
+            }
+            else
+            {
+                currentPower -= chargeSpeed * Time.deltaTime;
+                if (currentPower <= 0f)
+                {
+                    currentPower = 0f;
+                    chargingUp = true;
+                }
+            }
         }
 
         if (Input.GetKeyUp(KeyCode.Space) && isCharging)
