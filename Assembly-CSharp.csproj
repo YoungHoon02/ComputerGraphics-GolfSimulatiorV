@@ -43,13 +43,24 @@
     <UnityVersion>6000.4.8f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="C:\Users\User\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.2.2\Analyzers\Microsoft.Unity.Analyzers.dll" />
+    <Analyzer Include="C:\Users\humen\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.2.2\Analyzers\Microsoft.Unity.Analyzers.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.SourceGenerators.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.8f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Manager\InputManager.cs" />
+    <Compile Include="Assets\Scenes\Scripts\GamePlay\HoleTrigger.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Core\SurfaceType.cs" />
+    <Compile Include="Assets\Scenes\Scripts\UI\UIManager.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Manager\ScoreManager.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Ball\PhysicsCore.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Ball\BallPhysics.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Ball\BallCollisionDebugProbe.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Manager\WindManager.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Manager\GameManager.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Camera\CameraController.cs" />
+    <Compile Include="Assets\Scenes\Scripts\Prediction\TrajectoryPredictor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
