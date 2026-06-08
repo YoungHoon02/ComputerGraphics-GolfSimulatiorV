@@ -101,8 +101,9 @@ public class UIManager : MonoBehaviour
 
         if (windArrow != null && windDir.sqrMagnitude > 0.0001f)
         {
+            // 스프라이트 기본 방향이 남쪽(↓)이므로 180도 오프셋을 더합니다.
             float angle = Mathf.Atan2(windDir.x, windDir.z) * Mathf.Rad2Deg;
-            windArrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -angle);
+            windArrow.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -angle + 180f);
         }
 
         if (windStrengthText != null)
