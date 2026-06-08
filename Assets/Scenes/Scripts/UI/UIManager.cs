@@ -76,6 +76,7 @@ public class UIManager : MonoBehaviour
         UpdateScore();
         UpdateWind();
         UpdateDistance();
+        UpdateClubInfoAuto();
     }
 
     // ── 기존 메서드 ───────────────────────────────────────────────────────────
@@ -125,6 +126,18 @@ public class UIManager : MonoBehaviour
     }
 
     // ── 추가 메서드 ───────────────────────────────────────────────────────────
+
+    // ClubInfo를 매 프레임 자동 갱신합니다 (퍼터 전환 + 거리 + 방향 반영).
+    private void UpdateClubInfoAuto()
+    {
+        if (clubInfoText == null || input == null || ball == null || holeTransform == null) return;
+
+        string club = input.IsPutterMode ? "PT" : "1W";
+        string dir  = input.AimDirection;
+        float meters = Vector3.Distance(ball.transform.position, holeTransform.position);
+        int yards = Mathf.RoundToInt(meters * 1.094f);
+        clubInfoText.text = $"{club} {dir} {yards}Y";
+    }
 
     // 홀 정보를 좌상단에 표시합니다 (예: "1H\n374Y\nPAR 4").
     public void SetHoleInfo(int hole, int yards, int par)

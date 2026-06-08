@@ -55,6 +55,32 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    [Header("Hole Settings")]
+    [SerializeField] private int holeNumber = 1;
+    [SerializeField] private int holePar = 4;
+
+    [Header("Club Settings")]
+    [SerializeField] private string clubName = "1W";
+    [SerializeField] private string clubDirection = "N";
+
+    private void Start()
+    {
+        if (uiManager == null) return;
+
+        // 티(공 시작 위치)~홀컵 거리를 자동 계산해 야드로 변환합니다.
+        int holeYards = 0;
+        if (ball != null && holeTransform != null)
+        {
+            float meters = Vector3.Distance(ball.transform.position, holeTransform.position);
+            holeYards = Mathf.RoundToInt(meters * 1.094f);
+        }
+
+        uiManager.SetHoleInfo(holeNumber, holeYards, holePar);
+
+        // 클럽 거리도 홀컵까지 거리 기준으로 표시합니다.
+        uiManager.UpdateClubInfo(clubName, clubDirection, holeYards);
+    }
+
     private void OnEnable()
     {
         if (inputManager != null)
@@ -116,6 +142,10 @@ public class GameManager : MonoBehaviour
         if (current == previousSurface) return;
 
         previousSurface = current;
+
+        // 그린 진입/이탈 시 퍼터 자동 전환합니다.
+        if (inputManager != null)
+            inputManager.SetPutterMode(current == SurfaceType.Green);
 
         if (uiManager == null) return;
 
