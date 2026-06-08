@@ -30,6 +30,8 @@ public class BallPhysics : MonoBehaviour
     [SerializeField] private float bunkerRestitution = 0.10f;
     [SerializeField] private float obstacleRestitution = 0.60f;
     [SerializeField] private float f = 0.1f;
+    // 이 속도보다 빠르게 내려오면 '튕기고', 느려지면 '구른다'.
+    [SerializeField] private float bounceThreshold = 0.8f;
 
     [Header("Shot Test")]
     // 임시 테스트 입력용 값입니다. 실제 UI가 붙으면 Launch()에 UI 값을 넘기면 됩니다.
@@ -98,12 +100,25 @@ public class BallPhysics : MonoBehaviour
             if (groundSurface != SurfaceType.None && groundSurface != SurfaceType.OutOfBounds)
             {
                 float surfaceY = groundHit.point.y + BallRadius;   // 공 중심이 놓일 높이
-                if (position.y < surfaceY)                          // 지면에 닿거나 파고들면 안착
+                if (position.y < surfaceY)                          // 지면을 파고들었다 = 이번 스텝에 지면 충돌
                 {
-                    position.y = surfaceY;
-                    velocity.y = 0f;
-                    isGrounded = true;
-                    // isFlying은 여기서 끄지 않습니다. 완전히 멈출 때 아래 정지 판정이 끕니다.
+                    position.y = surfaceY;                          // 표면 위로 되돌리고
+                    currentSurface = groundSurface;
+
+                    // 레퍼런스 시뮬과 동일: 교차 지점에서 수직 속도를 반사합니다.
+                    if (velocity.y < -bounceThreshold)
+                    {
+                        float e = GetRestitution(groundSurface);
+                        velocity.y = -e * velocity.y;               // 수직 성분 반사 (e) → 다시 떠오름
+                        velocity.x *= (1f - f);                     // 접선(수평) 성분은 마찰 f로 감속
+                        velocity.z *= (1f - f);                     // 레퍼런스 ③: -e·v_n + (1-f)·v_t
+                        isGrounded = false;                          // 다시 공중 상태
+                    }
+                    else
+                    {
+                        velocity.y = 0f;                             // 더는 못 튕김 → 접지 후 구르기
+                        isGrounded = true;
+                    }
                 }
             }
         }
@@ -242,7 +257,7 @@ public class BallPhysics : MonoBehaviour
         // 이때도 반발하면 작은 속도가 계속 재충전되어 공이 끝없이 미끄러집니다.
         // (그런 접촉은 raycast 안착과 마찰이 대신 처리합니다.)
         float approachSpeed = -Vector3.Dot(velocity, n);
-        if (approachSpeed < 0.5f)
+        if (approachSpeed < 0.1f)
         {
             return;
         }

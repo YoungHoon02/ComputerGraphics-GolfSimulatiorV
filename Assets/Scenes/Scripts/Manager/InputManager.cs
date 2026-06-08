@@ -63,12 +63,27 @@ public class InputManager : MonoBehaviour
         HandleAimInput();
     }
 
+    // 퍼터 진입 직전의 피치를 보관했다가, 퍼터 해제 시 복원합니다.
+    private float pitchBeforePutter = 25f;
+
     // GameManager가 그린 감지 시 호출합니다.
     public void SetPutterMode(bool enabled)
     {
+        if (enabled == IsPutterMode) return;   // 상태 변화 없으면 무시(저장값 덮어쓰기 방지)
+
+        if (enabled)
+        {
+            // 퍼터는 지면 굴리기 — 피치를 0으로 고정하되, 이전 값은 기억해 둡니다.
+            pitchBeforePutter = currentPitch;
+            currentPitch = 0f;
+        }
+        else
+        {
+            // 퍼터 해제 시 일반 클럽 피치를 되돌립니다.
+            currentPitch = pitchBeforePutter;
+        }
+
         IsPutterMode = enabled;
-        // 퍼터는 지면 굴리기 — 피치를 0으로 고정합니다.
-        if (enabled) currentPitch = 0f;
     }
 
     private void HandlePowerInput()
