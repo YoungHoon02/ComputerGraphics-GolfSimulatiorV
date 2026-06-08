@@ -44,9 +44,11 @@ public class TerrainSplitByLayer : EditorWindow
             int hy = Mathf.RoundToInt((float)y / (resolution - 1) * (fullRes - 1));
             int i = y * resolution + x;
 
+            // Y에 terrain.transform.position.y(음수)를 더하면 지면이 통째로 0 아래로 내려가
+            // 공이 닿지 못합니다. 수평(X/Z)은 기존대로 두고, 높이만 0 ~ data.size.y로 내보냅니다.
             allVerts[i] = new Vector3(
                 (float)x / (resolution - 1) * data.size.x + terrain.transform.position.x,
-                heights[hy, hx] * data.size.y + terrain.transform.position.y,
+                heights[hy, hx] * data.size.y,
                 (float)y / (resolution - 1) * data.size.z + terrain.transform.position.z);
             allUVs[i] = new Vector2((float)x / (resolution - 1), (float)y / (resolution - 1));
         }

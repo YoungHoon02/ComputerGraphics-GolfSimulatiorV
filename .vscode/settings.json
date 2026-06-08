@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "ComputerGraphics-GolfSimulatiorV.slnx",
+    "dotnet.defaultSolution": "ComputerGraphics-GolfSimulatiorV-master.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }

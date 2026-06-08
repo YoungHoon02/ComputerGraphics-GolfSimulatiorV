@@ -37,7 +37,11 @@ public class BallPhysics : MonoBehaviour
     [SerializeField] private float testPitch = 35f;
 
     private Rigidbody rb;
+    private SphereCollider sphere;
     private Vector3 startPosition;
+
+    // 공 중심에서 표면까지의 월드 반지름. 지면 안착 높이를 계산할 때 사용합니다.
+    private float BallRadius => sphere != null ? sphere.radius * transform.lossyScale.x : 0.1f;
 
     public Vector3 Velocity => velocity;
     public bool IsFlying => isFlying;
@@ -47,6 +51,7 @@ public class BallPhysics : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        sphere = GetComponent<SphereCollider>();
 
         // Rigidbody는 충돌 감지용으로만 사용하고, 실제 이동은 이 스크립트가 계산합니다.
         rb.useGravity = false;
@@ -63,7 +68,9 @@ public class BallPhysics : MonoBehaviour
         // 이동/마찰 계산 전에 현재 공 아래 표면을 먼저 갱신합니다.
         UpdateCurrentSurfaceByRaycast();
 
-        if (!isFlying && !isGrounded)
+        // 지면에 얹혀 완전히 멈춰 있을 때만 계산을 건너뜁니다(바람에 의한 미끄러짐 방지).
+        // 공중(접지 아님)이면 아래에서 중력으로 떨어지게 둡니다.
+        if (!isFlying && isGrounded && velocity.sqrMagnitude < 0.0001f)
         {
             return;
         }
@@ -80,13 +87,25 @@ public class BallPhysics : MonoBehaviour
         // 핵심 요구사항: Semi-implicit Euler 적분입니다.
         PhysicsCore.Step(ref position, ref velocity, a_total, dt);
 
-        // 임시 지면 보정입니다. 충돌 계산이 비어 있어도 공이 시작 높이 아래로 꺼지지 않게 합니다.
-        if (position.y < startPosition.y)
+        // 시작 높이 고정(평평한 투명 바닥) 대신, 공 바로 아래 '실제 지면' 높이를 찾아 그 위에 안착시킵니다.
+        // 빠르게 떨어질 때 지면을 뚫지 않도록 공보다 위에서 쏘고, 자기 레이어는 마스크로 제외합니다.
+        // 이렇게 하면 공이 굴곡 지형의 언덕·계곡 표면을 그대로 따라갑니다.
+        int groundMask = ~(1 << gameObject.layer);
+        if (Physics.Raycast(position + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit,
+                5f, groundMask, QueryTriggerInteraction.Ignore))
         {
-            position.y = startPosition.y;
-            velocity.y = 0f;
-            isGrounded = true;
-            isFlying = false;
+            SurfaceType groundSurface = LayerToSurface(groundHit.collider.gameObject.layer);
+            if (groundSurface != SurfaceType.None && groundSurface != SurfaceType.OutOfBounds)
+            {
+                float surfaceY = groundHit.point.y + BallRadius;   // 공 중심이 놓일 높이
+                if (position.y < surfaceY)                          // 지면에 닿거나 파고들면 안착
+                {
+                    position.y = surfaceY;
+                    velocity.y = 0f;
+                    isGrounded = true;
+                    // isFlying은 여기서 끄지 않습니다. 완전히 멈출 때 아래 정지 판정이 끕니다.
+                }
+            }
         }
 
         transform.position = position;
@@ -124,7 +143,9 @@ public class BallPhysics : MonoBehaviour
 
                 if (!isFlying)
                 {
-                    isGrounded = true;
+                    // 실제로 지면에 닿을 만큼 가까울 때만 접지로 봅니다.
+                    // 살짝 떠 있으면 접지가 아니므로 위에서 중력으로 떨어져 표면에 안착합니다.
+                    isGrounded = hit.distance <= BallRadius + 0.05f;
                 }
 
                 return;
@@ -215,6 +236,16 @@ public class BallPhysics : MonoBehaviour
         SurfaceType hitSurface = LayerToSurface(collision.gameObject.layer);
         // 충돌 순간의 표면만 저장하고, 이후 마찰 계산은 이 값을 계속 사용합니다.
         currentSurface = hitSurface;
+
+        // 표면을 향해 '실제로 빠르게 들어올 때'만 반발합니다.
+        // 지면에 얹혀 구르거나 정지 중인 접촉은 매 프레임 충돌이 재발생하는데,
+        // 이때도 반발하면 작은 속도가 계속 재충전되어 공이 끝없이 미끄러집니다.
+        // (그런 접촉은 raycast 안착과 마찰이 대신 처리합니다.)
+        float approachSpeed = -Vector3.Dot(velocity, n);
+        if (approachSpeed < 0.5f)
+        {
+            return;
+        }
 
         float e = GetRestitution(hitSurface);
 
