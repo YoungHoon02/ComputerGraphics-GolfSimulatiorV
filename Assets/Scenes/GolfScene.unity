@@ -1073,6 +1073,10 @@ MonoBehaviour:
   uiManager: {fileID: 730480981}
   cameraController: {fileID: 1394331810}
   holeTransform: {fileID: 1210017091}
+  holeNumber: 1
+  holePar: 4
+  clubName: 1W
+  clubDirection: N
 --- !u!1 &730480976
 GameObject:
   m_ObjectHideFlags: 0
@@ -1087,7 +1091,7 @@ GameObject:
   - component: {fileID: 730480977}
   - component: {fileID: 730480981}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: Canvas(UI Manager)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1204,7 +1208,7 @@ MonoBehaviour:
   holeTransform: {fileID: 1210017091}
   powerSlider: {fileID: 1139597072}
   shotCountText: {fileID: 39909679}
-  windArrow: {fileID: 0}
+  windArrow: {fileID: 1199196957}
   windStrengthText: {fileID: 1931805171}
   distanceText: {fileID: 747560292}
   resultPanel: {fileID: 30848945}
@@ -2424,6 +2428,8 @@ MonoBehaviour:
   minPitch: 0
   maxPitch: 45
   yawSpeed: 120
+  putterMinPower: 0.3
+  putterMaxPower: 5
 --- !u!1 &1394331804
 GameObject:
   m_ObjectHideFlags: 0
